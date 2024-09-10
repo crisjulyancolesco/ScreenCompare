@@ -34,6 +34,13 @@ export default function Home() {
     }
   };
 
+  const handleClear = () => {
+    setUrl1('');
+    setUrl2('');
+    setResult(null);
+    setError(null);
+  };
+
   return (
     <div className="bg-gray-100 flex items-center justify-center min-h-screen">
       <div className="bg-white shadow-lg rounded-lg p-8 max-w-full w-full">
@@ -68,12 +75,21 @@ export default function Home() {
               />
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 focus:outline-none font-semibold transition duration-200"
-            >
-              Compare URLs
-            </button>
+            <div className="flex space-x-4">
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 focus:outline-none font-semibold transition duration-200"
+              >
+                Compare URLs
+              </button>
+              <button
+                type="button"
+                onClick={handleClear}
+                className="w-1/4 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 focus:outline-none font-semibold transition duration-200"
+              >
+                Clear
+              </button>
+            </div>
           </form>
         </div>
 

@@ -20,6 +20,7 @@ export default function Home() {
       });
 
       const data = await response.json();
+      console.log('Response from server:', data); // Debugging
 
       if (response.ok) {
         setResult(data);
@@ -96,24 +97,59 @@ export default function Home() {
         {/* Result Section */}
         {result && (
           <div className="mt-8 border rounded-lg bg-gray-100 p-4">
-            <p className="text-lg text-green-600 font-semibold mt-4 text-center">Comparison complete!</p>
-            <p className="text-sm text-gray-700 text-center">Number of different pixels: {result.numDiffPixels}</p>
-            <div className="flex justify-between items-center mt-4 space-x-4">
-              <div className="w-1/3 text-center">
-                <p className="mt-2 text-sm text-gray-600">Screenshot from URL 1</p>
-                <img src={`${result.screenshot1}?${new Date().getTime()}`} alt="Screenshot 1" className="h-auto w-full rounded-lg shadow-md" />
+            {result?.dimensionMismatch ? (  // Ensure this check works properly
+              <div>
+                <p className="text-lg text-red-600 font-semibold mt-4 text-center">
+                  Dimension Mismatch Detected!
+                </p>
+                <p className="text-sm text-gray-700 text-center">
+                  The screenshots have different dimensions.
+                </p>
+                <p className="text-sm text-gray-700 text-center">
+                  URL 1 Dimensions: {result.dimensions1.width} x {result.dimensions1.height}
+                </p>
+                <p className="text-sm text-gray-700 text-center">
+                  URL 2 Dimensions: {result.dimensions2.width} x {result.dimensions2.height}
+                </p>
+                <div className="flex justify-between items-center mt-4 space-x-4">
+                  <div className="w-1/2 text-center">
+                    <p className="mt-2 text-sm text-gray-600">Screenshot from URL 1</p>
+                    <img src={`${result.screenshot1}?${new Date().getTime()}`} alt="Screenshot 1" className="h-auto w-full rounded-lg shadow-md" />
+                  </div>
+                  <div className="w-1/2 text-center">
+                    <p className="mt-2 text-sm text-gray-600">Screenshot from URL 2</p>
+                    <img src={`${result.screenshot2}?${new Date().getTime()}`} alt="Screenshot 2" className="h-auto w-full rounded-lg shadow-md" />
+                  </div>
+                </div>
               </div>
-              <div className="w-1/3 text-center">
-                <p className="mt-2 text-sm text-gray-600">Difference Image</p>
-                <img src={`${result.diffImage}?${new Date().getTime()}`} alt="Difference Image" className="h-auto w-full rounded-lg shadow-md" />
+            ) : (
+              <div>
+                <p className="text-lg text-green-600 font-semibold mt-4 text-center">
+                  Comparison complete!
+                </p>
+                <p className="text-sm text-gray-700 text-center">
+                  Number of different pixels: {result.numDiffPixels}
+                </p>
+                <div className="flex justify-between items-center mt-4 space-x-4">
+                  <div className="w-1/3 text-center">
+                    <p className="mt-2 text-sm text-gray-600">Screenshot from URL 1</p>
+                    <img src={`${result.screenshot1}?${new Date().getTime()}`} alt="Screenshot 1" className="h-auto w-full rounded-lg shadow-md" />
+                  </div>
+                  <div className="w-1/3 text-center">
+                    <p className="mt-2 text-sm text-gray-600">Difference Image</p>
+                    <img src={`${result.diffImage}?${new Date().getTime()}`} alt="Difference Image" className="h-auto w-full rounded-lg shadow-md" />
+                  </div>
+                  <div className="w-1/3 text-center">
+                    <p className="mt-2 text-sm text-gray-600">Screenshot from URL 2</p>
+                    <img src={`${result.screenshot2}?${new Date().getTime()}`} alt="Screenshot 2" className="h-auto w-full rounded-lg shadow-md" />
+                  </div>
+                </div>
               </div>
-              <div className="w-1/3 text-center">
-                <p className="mt-2 text-sm text-gray-600">Screenshot from URL 2</p>
-                <img src={`${result.screenshot2}?${new Date().getTime()}`} alt="Screenshot 2" className="h-auto w-full rounded-lg shadow-md" />
-              </div>
-            </div>
+            )}
           </div>
         )}
+
+        {/* Error Section */}
         {error && (
           <div className="mt-8 border rounded-lg bg-gray-100 p-4">
             <p className="text-red-600 font-semibold">{`Error: ${error}`}</p>

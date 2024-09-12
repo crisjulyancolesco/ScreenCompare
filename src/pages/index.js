@@ -4,6 +4,7 @@ import "../app/globals.css";
 export default function Home() {
   const [url1, setUrl1] = useState('');
   const [url2, setUrl2] = useState('');
+  const [pages, setPages] = useState(['']); // State to handle multiple pages
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -16,7 +17,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url1, url2 }),
+        body: JSON.stringify({ url1, url2, pages }), // Include pages in the request body
       });
 
       const data = await response.json();
@@ -38,8 +39,23 @@ export default function Home() {
   const handleClear = () => {
     setUrl1('');
     setUrl2('');
+    setPages(['']); // Reset pages
     setResult(null);
     setError(null);
+  };
+
+  const handlePageChange = (index, event) => {
+    const newPages = [...pages];
+    newPages[index] = event.target.value;
+    setPages(newPages);
+  };
+
+  const addPageField = () => {
+    setPages([...pages, '']);
+  };
+
+  const removePageField = (index) => {
+    setPages(pages.filter((_, i) => i !== index));
   };
 
   return (
@@ -76,6 +92,37 @@ export default function Home() {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Additional Pages:</label>
+              {pages.map((page, index) => (
+                <div key={index} className="flex items-center space-x-4 mb-2">
+                  <input
+                    type="text"
+                    placeholder={`Page ${index + 1}`}
+                    value={page}
+                    onChange={(e) => handlePageChange(index, e)}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  />
+                  {pages.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePageField(index)}
+                      className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addPageField}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                Add Page
+              </button>
+            </div>
+
             <div className="flex space-x-4">
               <button
                 type="submit"
@@ -97,55 +144,59 @@ export default function Home() {
         {/* Result Section */}
         {result && (
           <div className="mt-8 border rounded-lg bg-gray-100 p-4">
-            {result?.dimensionMismatch ? (  // Ensure this check works properly
-              <div>
-                <p className="text-lg text-red-600 font-semibold mt-4 text-center">
-                  Dimension Mismatch Detected!
-                </p>
-                <p className="text-sm text-gray-700 text-center">
-                  The screenshots have different dimensions.
-                </p>
-                <p className="text-sm text-gray-700 text-center">
-                  URL 1 Dimensions: {result.dimensions1.width} x {result.dimensions1.height}
-                </p>
-                <p className="text-sm text-gray-700 text-center">
-                  URL 2 Dimensions: {result.dimensions2.width} x {result.dimensions2.height}
-                </p>
-                <div className="flex justify-between items-center mt-4 space-x-4">
-                  <div className="w-1/2 text-center">
-                    <p className="mt-2 text-sm text-gray-600">Screenshot from URL 1</p>
-                    <img src={`${result.screenshot1}?${new Date().getTime()}`} alt="Screenshot 1" className="h-auto w-full rounded-lg shadow-md" />
+            {result.results.map((result, index) => (
+              <div key={index} className="mb-4">
+                {result.dimensionMismatch ? (
+                  <div>
+                    <p className="text-lg text-red-600 font-semibold mt-4 text-center">
+                      Dimension Mismatch Detected!
+                    </p>
+                    <p className="text-sm text-gray-700 text-center">
+                      The screenshots have different dimensions.
+                    </p>
+                    <p className="text-sm text-gray-700 text-center">
+                      URL 1 Dimensions: {result.dimensions1.width} x {result.dimensions1.height}
+                    </p>
+                    <p className="text-sm text-gray-700 text-center">
+                      URL 2 Dimensions: {result.dimensions2.width} x {result.dimensions2.height}
+                    </p>
+                    <div className="flex justify-between items-center mt-4 space-x-4">
+                      <div className="w-1/2 text-center">
+                        <p className="mt-2 text-sm text-gray-600">Screenshot from URL 1</p>
+                        <img src={`${result.screenshot1}?${new Date().getTime()}`} alt="Screenshot 1" className="h-auto w-full rounded-lg shadow-md" />
+                      </div>
+                      <div className="w-1/2 text-center">
+                        <p className="mt-2 text-sm text-gray-600">Screenshot from URL 2</p>
+                        <img src={`${result.screenshot2}?${new Date().getTime()}`} alt="Screenshot 2" className="h-auto w-full rounded-lg shadow-md" />
+                      </div>
+                    </div>
                   </div>
-                  <div className="w-1/2 text-center">
-                    <p className="mt-2 text-sm text-gray-600">Screenshot from URL 2</p>
-                    <img src={`${result.screenshot2}?${new Date().getTime()}`} alt="Screenshot 2" className="h-auto w-full rounded-lg shadow-md" />
+                ) : (
+                  <div>
+                    <p className="text-lg text-green-600 font-semibold mt-4 text-center">
+                      Comparison complete!
+                    </p>
+                    <p className="text-sm text-gray-700 text-center">
+                      Number of different pixels: {result.numDiffPixels}
+                    </p>
+                    <div className="flex justify-between items-center mt-4 space-x-4">
+                      <div className="w-1/3 text-center">
+                        <p className="mt-2 text-sm text-gray-600">Screenshot from URL 1</p>
+                        <img src={`${result.screenshot1}?${new Date().getTime()}`} alt="Screenshot 1" className="h-auto w-full rounded-lg shadow-md" />
+                      </div>
+                      <div className="w-1/3 text-center">
+                        <p className="mt-2 text-sm text-gray-600">Difference Image</p>
+                        <img src={`${result.diffImage}?${new Date().getTime()}`} alt="Difference Image" className="h-auto w-full rounded-lg shadow-md" />
+                      </div>
+                      <div className="w-1/3 text-center">
+                        <p className="mt-2 text-sm text-gray-600">Screenshot from URL 2</p>
+                        <img src={`${result.screenshot2}?${new Date().getTime()}`} alt="Screenshot 2" className="h-auto w-full rounded-lg shadow-md" />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
-            ) : (
-              <div>
-                <p className="text-lg text-green-600 font-semibold mt-4 text-center">
-                  Comparison complete!
-                </p>
-                <p className="text-sm text-gray-700 text-center">
-                  Number of different pixels: {result.numDiffPixels}
-                </p>
-                <div className="flex justify-between items-center mt-4 space-x-4">
-                  <div className="w-1/3 text-center">
-                    <p className="mt-2 text-sm text-gray-600">Screenshot from URL 1</p>
-                    <img src={`${result.screenshot1}?${new Date().getTime()}`} alt="Screenshot 1" className="h-auto w-full rounded-lg shadow-md" />
-                  </div>
-                  <div className="w-1/3 text-center">
-                    <p className="mt-2 text-sm text-gray-600">Difference Image</p>
-                    <img src={`${result.diffImage}?${new Date().getTime()}`} alt="Difference Image" className="h-auto w-full rounded-lg shadow-md" />
-                  </div>
-                  <div className="w-1/3 text-center">
-                    <p className="mt-2 text-sm text-gray-600">Screenshot from URL 2</p>
-                    <img src={`${result.screenshot2}?${new Date().getTime()}`} alt="Screenshot 2" className="h-auto w-full rounded-lg shadow-md" />
-                  </div>
-                </div>
-              </div>
-            )}
+            ))}
           </div>
         )}
 

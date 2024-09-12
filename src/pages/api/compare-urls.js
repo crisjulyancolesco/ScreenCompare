@@ -44,53 +44,67 @@ const compareImages = (img1Path, img2Path, diffPath, threshold = 0.1) => {
   return { numDiffPixels };
 };
 
+// Utility to sanitize URL paths for filenames
+const sanitizeFilename = (url) => {
+  return url
+    .replace(/https?:\/\//, '') // Remove protocol
+    .replace(/[^a-zA-Z0-9]/g, '_') // Replace non-alphanumeric characters
+    .replace(/_{2,}/g, '_'); // Replace multiple underscores with a single one
+};
+
 // Handler function
 export default async function handler(req, res) {
   if (req.method === 'POST') {
-    const { url1, url2, region, compareType = 'visual', threshold = 0.1 } = req.body;
+    const { url1, url2, region, pages, compareType = 'visual', threshold = 0.1 } = req.body;
 
     try {
       if (!url1 || !url2) {
         return res.status(400).json({ message: 'Both URLs are required.' });
       }
 
-      const filename1 = path.join(screenshotPath, 'screenshot1.png');
-      const filename2 = path.join(screenshotPath, 'screenshot2.png');
-      const diffFilename = path.join(screenshotPath, 'diff.png');
+      // Ensure pages is an array
+      const pageUrls1 = Array.isArray(pages) ? pages.map(p => url1 + p) : [url1];
+      const pageUrls2 = Array.isArray(pages) ? pages.map(p => url2 + p) : [url2];
 
-      // Option for capturing a specific region
-      const clip = region ? { x: region.x, y: region.y, width: region.width, height: region.height } : null;
+      const filenames1 = pageUrls1.map(url => path.join(screenshotPath, `screenshot1_${sanitizeFilename(url)}.png`));
+      const filenames2 = pageUrls2.map(url => path.join(screenshotPath, `screenshot2_${sanitizeFilename(url)}.png`));
+      const diffFilenames = pageUrls1.map(url => path.join(screenshotPath, `diff_${sanitizeFilename(url)}.png`));
 
-      // Capture screenshots
-      await captureScreenshot(url1, filename1, clip);
-      await captureScreenshot(url2, filename2, clip);
+      // Capture screenshots for all pages
+      await Promise.all(pageUrls1.map((pageUrl, index) => captureScreenshot(pageUrl, filenames1[index], region)));
+      await Promise.all(pageUrls2.map((pageUrl, index) => captureScreenshot(pageUrl, filenames2[index], region)));
 
-      // Check dimensions of both screenshots
-      const dimensions1 = getImageDimensions(filename1);
-      const dimensions2 = getImageDimensions(filename2);
+      // Check dimensions and compare images
+      const comparisonResults = await Promise.all(filenames1.map(async (filename1, index) => {
+        const filename2 = filenames2[index];
+        const diffFilename = diffFilenames[index];
 
-      // Return immediately if the dimensions do not match
-      if (dimensions1.width !== dimensions2.width || dimensions1.height !== dimensions2.height) {
-        return res.json({
-          message: 'Images have different dimensions',
-          dimensions1,
-          dimensions2,
-          dimensionMismatch: true,  // This flag should be set to true
-          screenshot1: '/screenshots/screenshot1.png',
-          screenshot2: '/screenshots/screenshot2.png',
-        });
-      }
+        const dimensions1 = getImageDimensions(filename1);
+        const dimensions2 = getImageDimensions(filename2);
 
-      // Proceed with image comparison if dimensions are the same
-      const comparisonResult = compareImages(filename1, filename2, diffFilename, threshold);
+        if (dimensions1.width !== dimensions2.width || dimensions1.height !== dimensions2.height) {
+          return {
+            message: 'Images have different dimensions',
+            dimensions1,
+            dimensions2,
+            dimensionMismatch: true,
+            screenshot1: `/screenshots/${path.basename(filenames1[index])}`,
+            screenshot2: `/screenshots/${path.basename(filenames2[index])}`,
+          };
+        }
 
-      res.json({
-        message: 'Comparison complete',
-        numDiffPixels: comparisonResult.numDiffPixels,
-        diffImage: '/screenshots/diff.png',
-        screenshot1: '/screenshots/screenshot1.png',
-        screenshot2: '/screenshots/screenshot2.png',
-      });
+        const comparisonResult = compareImages(filename1, filename2, diffFilename, threshold);
+
+        return {
+          message: 'Comparison complete',
+          numDiffPixels: comparisonResult.numDiffPixels,
+          diffImage: `/screenshots/${path.basename(diffFilename)}`,
+          screenshot1: `/screenshots/${path.basename(filenames1[index])}`,
+          screenshot2: `/screenshots/${path.basename(filenames2[index])}`,
+        };
+      }));
+
+      res.json({ results: comparisonResults });
 
     } catch (error) {
       console.error('Error comparing URLs:', error);

@@ -5,6 +5,7 @@ export default function Home() {
   const [url1, setUrl1] = useState('');
   const [url2, setUrl2] = useState('');
   const [pages, setPages] = useState(['']); // State to handle multiple pages
+  const [captureAllLinks, setCaptureAllLinks] = useState(false); // State for the checkbox
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -17,7 +18,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url1, url2, pages }), // Include pages in the request body
+        body: JSON.stringify({ url1, url2, pages, captureAllLinks }), // Include pages and captureAllLinks
       });
 
       const data = await response.json();
@@ -121,6 +122,20 @@ export default function Home() {
               >
                 Add Page
               </button>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="captureAllLinks"
+                name="captureAllLinks"
+                checked={captureAllLinks}
+                onChange={() => setCaptureAllLinks(!captureAllLinks)}
+                className="mr-2"
+              />
+              <label htmlFor="captureAllLinks" className="text-sm font-medium text-gray-700">
+                Capture all links/pages on the website
+              </label>
             </div>
 
             <div className="flex space-x-4">
